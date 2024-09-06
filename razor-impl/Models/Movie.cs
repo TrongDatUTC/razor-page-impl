@@ -1,9 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.CompilerServices;
 
 namespace razor_impl.Models;
 
-public class Movie
+public class Movie : NotifyingEntity
 {
     public int ID { get; set; }
 
@@ -25,8 +27,31 @@ public class Movie
     [StringLength(30)]
     public string Genre { get; set; } = string.Empty;
 
+    private string _rating;
     [RegularExpression(@"^[A-Z]+[a-zA-Z0-9""'\s-]*$")]
     [StringLength(5)]
     [Required]
-    public string Rating { get; set; } = string.Empty;
+    public string Rating
+    {
+        get => _rating;
+        set => SetWithNotify(value, out _rating);
+    }
+}
+public abstract class NotifyingEntity : INotifyPropertyChanging, INotifyPropertyChanged
+{
+    protected void SetWithNotify<T>(T value, out T field, [CallerMemberName] string propertyName = "")
+    {
+        NotifyChanging(propertyName);
+        field = value;
+        NotifyChanged(propertyName);
+    }
+
+    public event PropertyChangingEventHandler PropertyChanging;
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    private void NotifyChanged(string propertyName)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    private void NotifyChanging(string propertyName)
+        => PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
 }
